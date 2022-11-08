@@ -52,12 +52,9 @@ void loop(){
 #define inTopic "esp01/inTopic"
 #define outTopic "esp01/outTopic"
 
-int pinDHT11 = 2;
-
-SimpleDHT11 dht11; 
-
 WiFiClient espClient;
 PubSubClient client(espClient);
+
 
 
 void setup() {
@@ -74,38 +71,35 @@ void setup() {
 
 } 
 
-String printValue;
-bool testValue;
+
 
 void loop() {
 	
+	static String printValue;
+	static bool testValue;
+
 	testValue = digitalRead(4);
 
 	if (testValue)	printValue = "On";
 	else			printValue = "Off";
 
-	if (!client.connected()) reconnect();
-		
-	client.publish(data_topic, String(printValue).c_str(), false);
+	mqttPublish(printValue);
 
-	Serial.println(testValue);
-
-	/*Serial.println("======================"); byte temperature = 0;
-	byte humidity = 0;
-	byte data[40] = { 0 };
-	if (dht11.read(pinDHT11, &temperature, &humidity, data)) {
-		Serial.print("FEHLER!");
-		return;
-	} for (int i = 0; i < 40; i++) {
-		Serial.print((int)data[i]);
-		if (i > 0 && ((i + 1) % 4) == 0) {
-			Serial.print(' ');
-		}
-	}
-	Serial.println(""); Serial.print((int)temperature); Serial.print(" *C, ");
-	//Serial.print((int)humidity); Serial.println(" %"); delay(1000);
-	*/
 	delay(1000);
+}
+
+void mqttPublish(String payload) {
+
+	if (!client.connected()) reconnect();
+
+	client.publish(data_topic, String(payload).c_str(), false);
+}
+
+void mqttPublish(String payload, const char *topic) {
+
+	if (!client.connected()) reconnect();
+
+	client.publish(topic, String(payload).c_str(), false);
 }
 
 void setup_wifi() {
@@ -150,5 +144,26 @@ void reconnect() {
 	}
 }
 
+/*
+int pinDHT11 = 2;
 
+SimpleDHT11 dht11;
 
+void DHT11Loop() {
+
+	Serial.println("======================"); byte temperature = 0;
+	byte humidity = 0;
+	byte data[40] = { 0 };
+	if (dht11.read(pinDHT11, &temperature, &humidity, data)) {
+		Serial.print("FEHLER!");
+		return;
+	} for (int i = 0; i < 40; i++) {
+		Serial.print((int)data[i]);
+		if (i > 0 && ((i + 1) % 4) == 0) {
+			Serial.print(' ');
+		}
+	}
+	Serial.println(""); Serial.print((int)temperature); Serial.print(" *C, ");
+	//Serial.print((int)humidity); Serial.println(" %"); delay(1000);
+	
+}*/
