@@ -40,14 +40,20 @@ void loop(){
 #include <PubSubClient.h>
 #include <SimpleDHT.h> 
 #include <ArduinoOTA.h>
+#include <string.h> 
+#include <iostream>
+
+using namespace std;
+using std::string;
+
 
 #define wifi_ssid "Angeldrive Studios 2,4"
 #define wifi_password "Garten123!"
 #define mqtt_server "192.168.178.183"
 #define mqtt_user "mqtt"         
 #define mqtt_password "Garten123!"
-#define ESPHostname "Arduino Test"
 
+#define ESPHostname "Arduino Test"
 #define data_topic "esp01/data"
 #define inTopic "esp01/inTopic"
 #define outTopic "esp01/outTopic"
@@ -74,32 +80,65 @@ void setup() {
 
 
 void loop() {
+	static bool boolValue;
+
+	boolValue = digitalRead(4);
+	string value1 = "On";
+	string value2 = "Off";
+
+	mqttPublish(toggelButton(boolValue, value1, value2));
+	delay(100);
+}
+
+
+string toggelButton(bool signal,string value1, string value2) {
+	static string lastValue;
+	static bool lastSignal;
+	static bool toggle;
+	Serial.print("signal:"); Serial.println(signal);
+	if (signal) {
+		if (signal != lastSignal) {
+			lastSignal = signal;
+			if (!toggle) {
+				toggle = true; lastValue = value1; Serial.print("toggle ON"); Serial.println(toggle); return value1;
+			}
+			else {
+				toggle = false; lastValue = value2; Serial.print("toggle OFF"); Serial.println(toggle); return value2;
+			}
+		}
+		
+	}
+	else lastSignal = false;
+	return lastValue;
+}
+
+string toggelSwitch(bool signal, string value1, string value2) {
+	static bool lastSignal;
+	static bool toggle = true;
+
+	if (signal) return value1;
+	if (!signal) return value2;
+}
+
+void mqttPublish(string payload) {
+	static string printValue;
+	static string lastPrint;
+
+	if (!client.connected()) reconnect();
+
+	if (lastPrint != payload) {
+		client.publish(data_topic, payload.c_str(), false);
+
+		lastPrint = payload;
+	}
 	
-	static String printValue;
-	static bool testValue;
-
-	testValue = digitalRead(4);
-
-	if (testValue)	printValue = "On";
-	else			printValue = "Off";
-
-	mqttPublish(printValue);
-
-	delay(1000);
 }
 
-void mqttPublish(String payload) {
+void mqttPublish(string payload, const char *topic) {
 
 	if (!client.connected()) reconnect();
 
-	client.publish(data_topic, String(payload).c_str(), false);
-}
-
-void mqttPublish(String payload, const char *topic) {
-
-	if (!client.connected()) reconnect();
-
-	client.publish(topic, String(payload).c_str(), false);
+	client.publish(topic, payload.c_str(), false);
 }
 
 void setup_wifi() {
